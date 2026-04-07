@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Experiment 2, Complex Cognitive Task</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;1,9..144,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#0a0a0f; --surface:#13131a; --surface2:#1a1a24; --border:#252535;
+    --text:#ddddf0; --muted:#6060a0; --accent:#8b72ff;
+    --green:#4ecb8d; --red:#e05555; --gold:#f0c060; --white:#ffffff;
+  }
+
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;overflow-x:hidden;}
+  body{background:var(--bg);color:var(--text);font-family:'DM Mono',monospace;
+    min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;
+    align-items:center;padding:72px 16px 48px;}
+
+  /* ── Top bar ── */
+  #topbar{position:fixed;top:0;left:0;right:0;height:52px;
+    background:var(--surface);border-bottom:1px solid var(--border);
+    display:flex;align-items:center;justify-content:space-between;
+    padding:0 20px;z-index:200;}
+  .tb-left{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);}
+  #timer-display{font-family:'Fraunces',serif;font-size:22px;font-weight:300;color:var(--gold);}
+  #timer-display.urgent{color:var(--red);animation:urgPulse 1s infinite;}
+  @keyframes urgPulse{0%,100%{opacity:1}50%{opacity:.5}}
+  .tb-right{font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);}
+
+  /* ── Screens ── */
+  .screen{display:none;width:100%;max-width:680px;flex-direction:column;gap:20px;animation:fadeUp .4s ease both;}
+  .screen.active{display:flex;}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+
+  /* ── Typography ── */
+  .chip{display:inline-block;font-size:9px;letter-spacing:2.5px;text-transform:uppercase;
+    color:var(--muted);border:1px solid var(--border);padding:5px 13px;border-radius:100px;}
+  h1{font-family:'Fraunces',serif;font-size:clamp(26px,6vw,38px);font-weight:300;line-height:1.2;color:var(--white);}
+  h2{font-family:'Fraunces',serif;font-size:clamp(20px,5vw,28px);font-weight:300;color:var(--white);}
+  p{font-size:clamp(12px,3vw,14px);line-height:1.8;color:var(--muted);}
+
+  /* ── Surfaces ── */
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:22px;}
+  .divider{height:1px;background:var(--border);}
+
+  /* ── Phase bar ── */
+  .phase-bar{display:flex;gap:6px;}
+  .phase-seg{flex:1;height:4px;border-radius:100px;background:var(--border);}
+  .phase-seg.done{background:var(--green);}
+  .phase-seg.cur{background:var(--accent);}
+
+  /* ── Buttons ── */
+  .btn{font-family:'DM Mono',monospace;font-size:12px;letter-spacing:1px;text-transform:uppercase;
+    padding:15px 24px;border-radius:10px;border:none;cursor:pointer;touch-action:manipulation;
+    user-select:none;transition:transform .12s,filter .12s;}
+  .btn:active{transform:scale(.96);}
+  .btn:disabled{opacity:.35;cursor:not-allowed;transform:none;}
+  .btn-primary{background:var(--text);color:var(--bg);font-weight:500;width:100%;padding:18px;font-size:13px;}
+  .btn-outline{background:transparent;color:var(--text);border:1.5px solid var(--border);}
+  .btn-outline:hover{border-color:var(--muted);}
+  .btn-green{background:rgba(78,203,141,.15);color:var(--green);border:1.5px solid rgba(78,203,141,.4);padding:14px 28px;}
+  .btn-green:hover{background:rgba(78,203,141,.25);}
+  .btn-red{background:rgba(224,85,85,.15);color:var(--red);border:1.5px solid rgba(224,85,85,.4);padding:14px 28px;}
+  .btn-red:hover{background:rgba(224,85,85,.25);}
+  .btn-row{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;}
+
+  /* ── Info list ── */
+  .ilist{list-style:none;display:flex;flex-direction:column;gap:0;}
+  .ilist li{display:flex;gap:12px;align-items:flex-start;padding:12px 0;
+    border-bottom:1px solid var(--border);font-size:13px;color:var(--muted);line-height:1.7;}
+  .ilist li:last-child{border-bottom:none;}
+  .ilist .dot{min-width:22px;height:22px;border-radius:50%;background:var(--accent);
+    color:var(--bg);display:flex;align-items:center;justify-content:center;
+    font-size:10px;font-weight:700;margin-top:2px;flex-shrink:0;}
+
+  /* ── Meta row ── */
+  .meta-row{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;
+    background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 16px;
+    font-size:12px;color:var(--muted);}
+  .meta-row strong{color:var(--text);}
+
+  /* ── Warning box ── */
+  .warn{background:rgba(240,192,96,.08);border:1px solid rgba(240,192,96,.25);
+    border-radius:10px;padding:14px 16px;font-size:12px;color:var(--gold);line-height:1.7;}
+
+  /* ── Feedback bar ── */
+  .fb-bar{padding:12px 16px;border-radius:10px;font-size:12px;letter-spacing:1px;
+    text-align:center;display:flex;align-items:center;justify-content:center;gap:8px;min-height:40px;}
+  .fb-bar.ok{background:rgba(78,203,141,.1);color:var(--green);border:1px solid rgba(78,203,141,.25);}
+  .fb-bar.no{background:rgba(224,85,85,.1);color:var(--red);border:1px solid rgba(224,85,85,.25);}
+  .fb-bar.empty{opacity:0;}
+
+  /* ── OSPAN ── */
+  .math-box{background:var(--surface2);border:1px solid var(--border);
+    border-radius:14px;padding:28px;text-align:center;}
+  .math-eq{font-family:'Fraunces',serif;font-size:clamp(26px,7vw,38px);font-weight:300;
+    color:var(--white);letter-spacing:.04em;margin-bottom:22px;}
+
+  .letter-box{background:var(--surface2);border:1px solid var(--accent);
+    border-radius:14px;padding:48px 32px;text-align:center;}
+  .big-letter{font-family:'Fraunces',serif;font-size:clamp(64px,18vw,88px);
+    font-weight:300;color:var(--accent);letter-spacing:.1em;}
+  .letter-hint{font-size:11px;color:var(--muted);margin-top:8px;letter-spacing:1px;text-transform:uppercase;}
+
+  .recall-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+  .recall-btn{padding:14px 8px;border:1.5px solid var(--border);border-radius:10px;
+    background:var(--surface2);font-family:'Fraunces',serif;font-size:clamp(16px,4vw,22px);
+    font-weight:300;cursor:pointer;transition:all .14s;color:var(--text);text-align:center;
+    touch-action:manipulation;}
+  .recall-btn:hover{border-color:var(--muted);}
+  .recall-btn.sel{border-color:var(--accent);background:rgba(139,114,255,.2);color:var(--accent);}
+  .sel-display{font-size:11px;color:var(--muted);margin-bottom:8px;letter-spacing:1px;}
+  .sel-display span{color:var(--text);}
+
+  /* ── SYMSPAN ── */
+  .sym-layout{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:center;}
+  @media(max-width:500px){.sym-layout{grid-template-columns:1fr;}}
+  .col-label{font-size:10px;font-weight:500;letter-spacing:1.5px;text-transform:uppercase;
+    color:var(--muted);margin-bottom:8px;text-align:center;}
+  #sym-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:2px;
+    background:var(--border);border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+  .sym-cell{aspect-ratio:1;background:var(--surface2);}
+  .sym-cell.on{background:var(--accent);}
+
+  #mat-show{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;
+    width:min(180px,45vw);height:min(180px,45vw);margin:0 auto;}
+  .mat-cell{background:var(--surface2);border-radius:4px;border:1px solid var(--border);}
+  .mat-cell.lit{background:var(--accent);}
+
+  #mat-recall{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;
+    width:min(240px,58vw);height:min(240px,58vw);margin:0 auto 12px;padding:8px;}
+  .rcell{background:var(--surface2);border-radius:6px;border:1.5px solid var(--border);
+    cursor:pointer;display:flex;align-items:center;justify-content:center;
+    font-family:'Fraunces',serif;font-size:13px;font-weight:300;
+    transition:all .12s;color:var(--muted);min-width:0;min-height:0;}
+  .rcell:hover{border-color:var(--muted);}
+  .rcell.picked{background:rgba(139,114,255,.2);border-color:var(--accent);color:var(--accent);}
+
+  /* ── TMT ── */
+  #tmt-canvas{border:1px solid var(--border);border-radius:12px;
+    background:var(--surface2);cursor:crosshair;display:block;width:100%;touch-action:none;}
+
+  /* ── Stat boxes ── */
+  .stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .stats-grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+  .stat-box{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:16px;}
+  .stat-label{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;}
+  .stat-value{font-family:'Fraunces',serif;font-size:clamp(20px,5vw,28px);font-weight:300;color:var(--white);}
+  .stat-unit{font-size:11px;color:var(--muted);}
+
+  /* ── Results ── */
+  .res-banner{background:linear-gradient(135deg,rgba(78,203,141,.12),rgba(78,203,141,.04));
+    border:1px solid rgba(78,203,141,.3);border-radius:14px;padding:28px;text-align:center;}
+  .res-section-title{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;}
+  .res-row{display:flex;justify-content:space-between;align-items:center;
+    padding:10px 14px;border-radius:8px;background:var(--surface2);
+    margin-bottom:6px;font-size:12px;}
+  .res-row .rl{color:var(--muted);}
+  .res-row .rv{font-family:'Fraunces',serif;font-weight:300;color:var(--white);font-size:16px;}
+</style>
+</head>
+<body>
+
+<div id="topbar">
+  <span class="tb-left">Experiment 2 · Complex Cognitive Task</span>
+  <span id="timer-display">10:00</span>
+  <span class="tb-right" id="task-label">—</span>
+</div>
+
+<!-- ── START ── -->
+<div class="screen active" id="s-start">
+  <div><div class="chip">High Cognitive Load Condition</div></div>
+  <h1>Complex<br>Cognitive<br><em style="font-style:italic;color:var(--muted)">Task</em></h1>
+  <div class="card">
+    <p>You will complete <strong style="color:var(--text)">3 tasks back-to-back</strong> within a <strong style="color:var(--text)">10-minute window</strong>. The timer starts when you click Begin. Work as quickly and accurately as possible.</p>
+  </div>
+  <div class="card">
+    <ul class="ilist">
+      <li><div class="dot">1</div><div><strong style="color:var(--text)">Operation Span</strong>, solve math problems while memorizing letters. 7 sets.</div></li>
+      <li><div class="dot">2</div><div><strong style="color:var(--text)">Symmetry Span</strong>, judge pattern symmetry, then recall a grid cell position. 6 sets.</div></li>
+      <li><div class="dot">3</div><div><strong style="color:var(--text)">Trail Making Test B</strong>, connect 25 targets in alternating number-letter order with no visual hints.</div></li>
+    </ul>
+  </div>
+  <div class="warn">⚠ Do not close or refresh this page. All tasks must be completed in a single session. You cannot go back.</div>
+  <button class="btn btn-primary" onclick="startBattery()">Begin Tasks →</button>
+</div>
+
+<!-- ── OSPAN ── -->
+<div class="screen" id="s-ospan">
+  <div class="phase-bar">
+    <div class="phase-seg cur" id="ph1"></div>
+    <div class="phase-seg" id="ph2"></div>
+    <div class="phase-seg" id="ph3"></div>
+  </div>
+  <div><div class="chip">Task 1 / 3 · Operation Span</div></div>
+  <h2 id="osp-title">Operation Span</h2>
+  <p id="osp-desc">A math equation appears, judge it <strong style="color:var(--text)">True or False</strong>. Then a letter flashes for <strong style="color:var(--text)">0.8 seconds</strong>, memorize it. After 3–5 pairs, recall all letters <strong style="color:var(--text)">in order</strong>.</p>
+
+  <div id="osp-instr" class="card">
+    <ul class="ilist">
+      <li><div class="dot">1</div><div>Judge the math equation True or False, you must answer correctly to continue.</div></li>
+      <li><div class="dot">2</div><div>A letter flashes for 0.8 seconds, memorize it immediately.</div></li>
+      <li><div class="dot">3</div><div>Repeat 3–5 times per set, then tap all letters you saw in the exact order.</div></li>
+      <li><div class="dot">4</div><div>7 sets total. Do not write anything down.</div></li>
+    </ul>
+    <br>
+    <button class="btn btn-primary" onclick="startOspan()">Start OSpan →</button>
+  </div>
+
+  <div id="osp-math" style="display:none">
+    <p style="font-size:11px;text-align:center;color:var(--muted);letter-spacing:1px;">
+      ⚠ Only the equation resets on a wrong answer, your letters stay in play
+    </p>
+    <div class="math-box">
+      <div class="math-eq" id="osp-eq">—</div>
+      <div class="btn-row">
+        <button class="btn btn-green" onclick="ospJudge(true)">✓ True</button>
+        <button class="btn btn-red" onclick="ospJudge(false)">✗ False</button>
+      </div>
+    </div>
+    <div class="fb-bar empty" id="osp-math-fb"></div>
+  </div>
+
+  <div id="osp-letter" style="display:none">
+    <div class="letter-box">
+      <div class="big-letter" id="osp-ltr">?</div>
+      <div class="letter-hint">Memorize this letter</div>
+    </div>
+  </div>
+
+  <div id="osp-recall" style="display:none">
+    <div class="card" style="display:flex;flex-direction:column;gap:14px;">
+      <p style="color:var(--text);">Select letters in the order you saw them:</p>
+      <div class="sel-display">Your sequence: <span id="osp-sel-txt">—</span></div>
+      <div class="recall-grid" id="osp-grid"></div>
+      <div class="btn-row" style="justify-content:flex-start;">
+        <button class="btn btn-outline" onclick="ospClear()">Clear</button>
+        <button class="btn btn-primary" style="flex:1;" onclick="ospSubmit()">Submit →</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="meta-row" id="osp-meta" style="display:none">
+    <span>Set <strong id="osp-sn">1</strong> / 7</span>
+    <span>Correct letters: <strong id="osp-correct">0</strong></span>
+    <span>Math accuracy: <strong id="osp-macc">—</strong></span>
+  </div>
+</div>
+
+<!-- ── SYMMETRY SPAN ── -->
+<div class="screen" id="s-sym">
+  <div class="phase-bar">
+    <div class="phase-seg done"></div>
+    <div class="phase-seg cur"></div>
+    <div class="phase-seg"></div>
+  </div>
+  <div><div class="chip">Task 2 / 3 · Symmetry Span</div></div>
+  <h2 id="sym-title">Symmetry Span</h2>
+  <p id="sym-desc">Judge if the 8×8 pattern is <strong style="color:var(--text)">vertically symmetric</strong>. Then a cell in the 4×4 grid lights up for <strong style="color:var(--text)">1 second</strong>, remember it. Recall all cells in order after each set.</p>
+
+  <div id="sym-instr" class="card">
+    <ul class="ilist">
+      <li><div class="dot">1</div><div>An 8×8 pattern appears, judge if the left half mirrors the right half. You must answer correctly to proceed.</div></li>
+      <li><div class="dot">2</div><div>A cell in a 4×4 grid lights up for 1 second, memorize its position.</div></li>
+      <li><div class="dot">3</div><div>Repeat 2–4 times. Then click the cells in order in the recall grid.</div></li>
+      <li><div class="dot">4</div><div>6 sets total.</div></li>
+    </ul>
+    <br>
+    <button class="btn btn-primary" onclick="startSym()">Start Symmetry Span →</button>
+  </div>
+
+  <div id="sym-main" style="display:none;flex-direction:column;gap:16px;">
+    <div id="sym-judge" style="display:none">
+      <div class="card">
+        <div class="sym-layout">
+          <div>
+            <div class="col-label">Is this vertically symmetric?</div>
+            <div id="sym-grid"></div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:12px;align-items:center;justify-content:center;">
+            <button class="btn btn-green" style="width:100%;max-width:180px;" onclick="symJudge(true)">✓ Symmetric</button>
+            <button class="btn btn-red"   style="width:100%;max-width:180px;" onclick="symJudge(false)">✗ Not Symmetric</button>
+          </div>
+        </div>
+        <div class="fb-bar empty" id="sym-judge-fb" style="margin-top:12px;"></div>
+      </div>
+    </div>
+
+    <div id="sym-mat" style="display:none">
+      <div class="card" style="text-align:center;">
+        <p style="margin-bottom:14px;color:var(--text);">Remember this cell:</p>
+        <div id="mat-show"></div>
+      </div>
+    </div>
+
+    <div id="sym-recall-div" style="display:none">
+      <div class="card" style="display:flex;flex-direction:column;gap:14px;align-items:center;">
+        <p style="color:var(--text);">Click cells in the order you saw them:</p>
+        <p style="font-size:11px;color:var(--muted);">Selected: <span id="sym-rc">0</span> / <span id="sym-rt">0</span></p>
+        <div id="mat-recall"></div>
+        <div class="btn-row">
+          <button class="btn btn-outline" onclick="symClear()">Clear</button>
+          <button class="btn btn-primary" onclick="symSubmit()">Submit →</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="fb-bar empty" id="sym-fb"></div>
+
+    <div class="meta-row" id="sym-meta">
+      <span>Set <strong id="sym-sn">1</strong> / 6</span>
+      <span>Correct cells: <strong id="sym-correct">0</strong></span>
+      <span>Symmetry acc: <strong id="sym-jacc">—</strong></span>
+    </div>
+  </div>
+</div>
+
+<!-- ── TMT-B ── -->
+<div class="screen" id="s-tmt">
+  <div class="phase-bar">
+    <div class="phase-seg done"></div>
+    <div class="phase-seg done"></div>
+    <div class="phase-seg cur"></div>
+  </div>
+  <div><div class="chip">Task 3 / 3 · Trail Making Test B</div></div>
+  <h2>Trail Making Test B</h2>
+  <p>Click the circles in <strong style="color:var(--text)">alternating number-letter order: 1 → A → 2 → B → 3 → C…</strong> through 13. All circles look the same, <strong style="color:var(--text)">no color hints are given.</strong></p>
+  <div class="meta-row">
+    <span>Next: <strong id="tmt-next" style="color:var(--accent)">?</strong></span>
+    <span style="color:var(--red);" id="tmt-err">Errors: 0</span>
+    <span style="color:var(--green);" id="tmt-done">Done: 0 / 25</span>
+  </div>
+  <canvas id="tmt-canvas" height="390"></canvas>
+  <button class="btn btn-outline" style="align-self:flex-start;" onclick="resetTMT()">↺ Reset</button>
+</div>
+
+<!-- ── RESULTS ── -->
+<div class="screen" id="s-results">
+  <div><div class="chip">Experiment Complete</div></div>
+  <h2>All Tasks Complete</h2>
+  <div class="res-banner">
+    <p style="color:var(--green);font-size:13px;letter-spacing:1px;">✓ Session finished</p>
+    <br>
+    <p>Please wait for the researcher to provide the next questionnaire.</p>
+  </div>
+
+  <div>
+    <div class="res-section-title">Task 1, Operation Span</div>
+    <div class="res-row"><span class="rl">Sets completed</span><span class="rv" id="r-osp-sets">—</span></div>
+    <div class="res-row"><span class="rl">Letters correctly recalled</span><span class="rv" id="r-osp-let">—</span></div>
+    <div class="res-row"><span class="rl">Math judgment accuracy</span><span class="rv" id="r-osp-math">—</span></div>
+  </div>
+  <div>
+    <div class="res-section-title">Task 2, Symmetry Span</div>
+    <div class="res-row"><span class="rl">Sets completed</span><span class="rv" id="r-sym-sets">—</span></div>
+    <div class="res-row"><span class="rl">Cells correctly recalled</span><span class="rv" id="r-sym-cells">—</span></div>
+    <div class="res-row"><span class="rl">Symmetry judgment accuracy</span><span class="rv" id="r-sym-acc">—</span></div>
+  </div>
+  <div>
+    <div class="res-section-title">Task 3, Trail Making Test B</div>
+    <div class="res-row"><span class="rl">Nodes completed</span><span class="rv" id="r-tmt-nodes">—</span></div>
+    <div class="res-row"><span class="rl">Errors made</span><span class="rv" id="r-tmt-err">—</span></div>
+    <div class="res-row"><span class="rl">Fully completed</span><span class="rv" id="r-tmt-fin">—</span></div>
+  </div>
+  <p style="text-align:center;font-size:12px;">Please inform the researcher that you have finished.</p>
+</div>
+
+<script>
+// ══════════════════════════════════════
+// GLOBAL TIMER
+// ══════════════════════════════════════
+let timeLeft=600, gTimer=null;
+
+function startTimer(){
+  gTimer=setInterval(()=>{
+    timeLeft--;
+    const m=Math.floor(timeLeft/60), s=timeLeft%60;
+    const el=document.getElementById('timer-display');
+    el.textContent=String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+    if(timeLeft<=60)el.classList.add('urgent');
+    else if(timeLeft<=120)el.style.color='var(--gold)';
+    if(timeLeft<=0){clearInterval(gTimer);showResults();}
+  },1000);
+}
+
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+function startBattery(){
+  startTimer();
+  showScreen('s-ospan');
+  document.getElementById('task-label').textContent='Task 1/3';
+}
+
+// ══════════════════════════════════════
+// TASK 1 — OSPAN
+// ══════════════════════════════════════
+const OSP_LETTERS=['F','H','J','K','L','N','P','Q','R','S','T','Y'];
+const OSP_SIZES=[3,4,3,5,4,5,3];
+let osp={setIdx:0,pairIdx:0,setLetters:[],shownLetters:[],selRecall:[],
+  mathOk:0,mathTotal:0,totCorrect:0,totLetters:0,curMath:null,waitingCorrect:false,
+  pendingTO:null};
+
+function genMath(){
+  const t=['add','sub','mul','chain'][Math.floor(Math.random()*4)];
+  let a,b,c,res,claimed,ok;
+  if(t==='add'){a=Math.floor(Math.random()*18)+4;b=Math.floor(Math.random()*18)+4;res=a+b;}
+  else if(t==='sub'){a=Math.floor(Math.random()*20)+10;b=Math.floor(Math.random()*a*0.6)+2;res=a-b;}
+  else if(t==='mul'){a=Math.floor(Math.random()*9)+2;b=Math.floor(Math.random()*9)+2;res=a*b;}
+  else{a=Math.floor(Math.random()*6)+2;b=Math.floor(Math.random()*6)+2;c=Math.floor(Math.random()*4)+1;res=(a+b)*c;}
+  ok=Math.random()>0.45;
+  if(!ok){const off=Math.random()>0.5?Math.floor(Math.random()*4)+1:-(Math.floor(Math.random()*4)+1);claimed=res+off;}
+  else claimed=res;
+  let txt=t==='add'?`${a} + ${b}`:t==='sub'?`${a} − ${b}`:t==='mul'?`${a} × ${b}`:`(${a} + ${b}) × ${c}`;
+  return{text:`${txt} = ${claimed}`,answer:ok};
+}
+
+function startOspan(){
+  document.getElementById('osp-instr').style.display='none';
+  document.getElementById('osp-meta').style.display='flex';
+  ospNextSet();
+}
+function ospNextSet(){
+  if(osp.setIdx>=OSP_SIZES.length){endOspan();return;}
+  const sz=OSP_SIZES[osp.setIdx];
+  osp.setLetters=[...OSP_LETTERS].sort(()=>Math.random()-.5).slice(0,sz);
+  osp.shownLetters=[];osp.pairIdx=0;
+  document.getElementById('osp-sn').textContent=osp.setIdx+1;
+  ospShowMath();
+}
+function ospShowMath(){
+  clearTimeout(osp.pendingTO);
+  document.getElementById('osp-math').style.display='block';
+  document.getElementById('osp-letter').style.display='none';
+  document.getElementById('osp-recall').style.display='none';
+  osp.curMath=genMath();
+  osp.waitingCorrect=false;
+  document.getElementById('osp-eq').textContent=osp.curMath.text;
+  const fb=document.getElementById('osp-math-fb');
+  fb.className='fb-bar empty';fb.textContent='';
+  document.querySelectorAll('#osp-math .btn').forEach(b=>b.disabled=false);
+}
+function ospJudge(ans){
+  if(osp.waitingCorrect)return;
+  osp.mathTotal++;
+  const correct=ans===osp.curMath.answer;
+  const fb=document.getElementById('osp-math-fb');
+
+  if(correct){
+    osp.mathOk++;
+    osp.waitingCorrect=true;
+    document.getElementById('osp-macc').textContent=Math.round(osp.mathOk/osp.mathTotal*100)+'%';
+    fb.className='fb-bar ok';fb.textContent='✓ Correct!';
+    document.querySelectorAll('#osp-math .btn').forEach(b=>b.disabled=true);
+    clearTimeout(osp.pendingTO);
+    osp.pendingTO=setTimeout(()=>ospShowLetter(),600);
+  } else {
+    document.getElementById('osp-macc').textContent=Math.round(osp.mathOk/osp.mathTotal*100)+'%';
+    fb.className='fb-bar no';fb.textContent='✗ Wrong, new equation incoming. Your letters are safe!';
+    // Disable buttons immediately to prevent double-clicks during the delay
+    document.querySelectorAll('#osp-math .btn').forEach(b=>b.disabled=true);
+    clearTimeout(osp.pendingTO);
+    osp.pendingTO=setTimeout(()=>{
+      osp.curMath=genMath();
+      document.getElementById('osp-eq').textContent=osp.curMath.text;
+      fb.className='fb-bar empty';fb.textContent='';
+      document.querySelectorAll('#osp-math .btn').forEach(b=>b.disabled=false);
+    },900);
+  }
+}
+function ospShowLetter(){
+  clearTimeout(osp.pendingTO);
+  document.getElementById('osp-math').style.display='none';
+  document.getElementById('osp-letter').style.display='block';
+  const l=osp.setLetters[osp.pairIdx];
+  osp.shownLetters.push(l);
+  document.getElementById('osp-ltr').textContent=l;
+  osp.pendingTO=setTimeout(()=>{
+    document.getElementById('osp-letter').style.display='none';
+    osp.pairIdx++;
+    if(osp.pairIdx<osp.setLetters.length)ospShowMath();
+    else ospShowRecall();
+  },800);
+}
+function ospShowRecall(){
+  document.getElementById('osp-recall').style.display='block';
+  osp.selRecall=[];
+  document.getElementById('osp-sel-txt').textContent='—';
+  const g=document.getElementById('osp-grid');g.innerHTML='';
+  [...OSP_LETTERS].sort(()=>Math.random()-.5).forEach(l=>{
+    const b=document.createElement('button');
+    b.className='recall-btn';b.textContent=l;
+    b.onclick=()=>{
+      if(b.classList.contains('sel')){b.classList.remove('sel');osp.selRecall=osp.selRecall.filter(x=>x!==l);}
+      else{b.classList.add('sel');osp.selRecall.push(l);}
+      document.getElementById('osp-sel-txt').textContent=osp.selRecall.length?osp.selRecall.join(' → '):'—';
+    };
+    g.appendChild(b);
+  });
+}
+function ospClear(){
+  osp.selRecall=[];
+  document.getElementById('osp-sel-txt').textContent='—';
+  document.querySelectorAll('.recall-btn').forEach(b=>b.classList.remove('sel'));
+}
+function ospSubmit(){
+  let score=0;
+  osp.shownLetters.forEach((l,i)=>{if(osp.selRecall[i]===l)score++;});
+  osp.totCorrect+=score;osp.totLetters+=osp.shownLetters.length;
+  document.getElementById('osp-correct').textContent=osp.totCorrect;
+  osp.setIdx++;
+  document.getElementById('osp-recall').style.display='none';
+  ospNextSet();
+}
+function endOspan(){
+  clearTimeout(osp.pendingTO);
+  ['osp-math','osp-letter','osp-recall','osp-meta'].forEach(id=>
+    document.getElementById(id).style.display='none');
+  document.getElementById('osp-title').textContent='✓ OSpan Complete';
+  document.getElementById('osp-desc').innerHTML='<strong style="color:var(--green)">Done!</strong> Moving to Task 2 in 3 seconds…';
+  setTimeout(()=>{showScreen('s-sym');document.getElementById('task-label').textContent='Task 2/3';},3000);
+}
+
+// ══════════════════════════════════════
+// TASK 2 — SYMMETRY SPAN
+// ══════════════════════════════════════
+const SYM_SIZES=[2,3,2,4,3,4];
+let sym={setIdx:0,pairIdx:0,setCells:[],shownCells:[],selRecall:[],
+  judgeOk:0,judgeTotal:0,totCorrect:0,totCells:0,curSymAns:false};
+
+function genSymPattern(){
+  const isSym=Math.random()>0.45;
+  const grid=[];
+  for(let r=0;r<8;r++){
+    const row=[];
+    for(let c=0;c<4;c++)row.push(Math.random()>0.45);
+    if(isSym){for(let c=3;c>=0;c--)row.push(row[c]);}
+    else{for(let c=3;c>=0;c--)row.push(Math.random()>0.45);}
+    grid.push(row);
+  }
+  if(!isSym){
+    let diff=0;
+    for(let r=0;r<8&&diff<2;r++)for(let c=0;c<4;c++)if(grid[r][c]!==grid[r][7-c])diff++;
+    if(diff<2)grid[0][0]=!grid[0][7];
+  }
+  return{grid,isSym};
+}
+function renderSymGrid(grid){
+  const el=document.getElementById('sym-grid');el.innerHTML='';
+  const wrap=document.querySelector('.sym-layout');
+  const sz=Math.min((wrap?wrap.offsetWidth/2:200)-30,200);
+  const cs=Math.floor(sz/8);
+  el.style.gridTemplateColumns=`repeat(8,${cs}px)`;
+  grid.forEach(row=>row.forEach(f=>{
+    const c=document.createElement('div');
+    c.className='sym-cell'+(f?' on':'');
+    c.style.width=cs+'px';c.style.height=cs+'px';
+    el.appendChild(c);
+  }));
+}
+function startSym(){
+  document.getElementById('sym-instr').style.display='none';
+  document.getElementById('sym-main').style.display='flex';
+  symNextSet();
+}
+function symNextSet(){
+  if(sym.setIdx>=SYM_SIZES.length){endSym();return;}
+  const sz=SYM_SIZES[sym.setIdx];
+  
+  // Generate unique cells
+  const allCells=[];
+  for(let r=0;r<4;r++)for(let c=0;c<4;c++)allCells.push({r,c});
+  
+  // Shuffle and select first sz cells
+  for(let i=allCells.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [allCells[i],allCells[j]]=[allCells[j],allCells[i]];
+  }
+  sym.setCells=allCells.slice(0,sz);
+  
+  sym.shownCells=[];sym.pairIdx=0;
+  document.getElementById('sym-sn').textContent=sym.setIdx+1;
+  document.getElementById('sym-fb').className='fb-bar empty';
+  document.getElementById('sym-fb').textContent='';
+  symShowPattern();
+}
+function symShowPattern(){
+  document.getElementById('sym-judge').style.display='block';
+  document.getElementById('sym-mat').style.display='none';
+  document.getElementById('sym-recall-div').style.display='none';
+  const{grid,isSym}=genSymPattern();
+  sym.curSymAns=isSym;
+  renderSymGrid(grid);
+  // Reset judge feedback and re-enable buttons
+  const fb=document.getElementById('sym-judge-fb');
+  fb.className='fb-bar empty';fb.textContent='';
+  document.querySelectorAll('#sym-judge .btn').forEach(b=>b.disabled=false);
+}
+function symJudge(ans){
+  sym.judgeTotal++;
+  const correct=ans===sym.curSymAns;
+  const fb=document.getElementById('sym-judge-fb');
+
+  if(correct){
+    sym.judgeOk++;
+    document.getElementById('sym-jacc').textContent=Math.round(sym.judgeOk/sym.judgeTotal*100)+'%';
+    fb.className='fb-bar ok';fb.textContent='✓ Correct!';
+    document.querySelectorAll('#sym-judge .btn').forEach(b=>b.disabled=true);
+    setTimeout(()=>symShowMat(),600);
+  } else {
+    // Wrong — show error, regenerate new pattern
+    document.getElementById('sym-jacc').textContent=Math.round(sym.judgeOk/sym.judgeTotal*100)+'%';
+    fb.className='fb-bar no';fb.textContent='✗ Wrong, try the next one!';
+    setTimeout(()=>{
+      const{grid,isSym}=genSymPattern();
+      sym.curSymAns=isSym;
+      renderSymGrid(grid);
+      fb.className='fb-bar empty';fb.textContent='';
+      document.querySelectorAll('#sym-judge .btn').forEach(b=>b.disabled=false);
+    },900);
+  }
+}
+function symShowMat(){
+  document.getElementById('sym-judge').style.display='none';
+  document.getElementById('sym-mat').style.display='block';
+  const cell=sym.setCells[sym.pairIdx];
+  sym.shownCells.push({...cell});
+  const g=document.getElementById('mat-show');g.innerHTML='';
+  g.style.display='grid';g.style.gridTemplateColumns='repeat(4,1fr)';
+  const sz=Math.min(180,window.innerWidth*0.45);
+  g.style.width=sz+'px';g.style.height=sz+'px';g.style.gap='4px';
+  for(let r=0;r<4;r++)for(let c=0;c<4;c++){
+    const d=document.createElement('div');
+    d.className='mat-cell'+(r===cell.r&&c===cell.c?' lit':'');
+    g.appendChild(d);
+  }
+  setTimeout(()=>{
+    document.getElementById('sym-mat').style.display='none';
+    sym.pairIdx++;
+    if(sym.pairIdx<sym.setCells.length)symShowPattern();
+    else symShowRecall();
+  },1000);
+}
+function symShowRecall(){
+  document.getElementById('sym-recall-div').style.display='block';
+  sym.selRecall=[];
+  document.getElementById('sym-rc').textContent='0';
+  document.getElementById('sym-rt').textContent=sym.shownCells.length;
+  const g=document.getElementById('mat-recall');g.innerHTML='';
+  const sz=Math.min(240,window.innerWidth*0.58);
+  g.style.width=sz+'px';g.style.height=sz+'px';
+  for(let r=0;r<4;r++)for(let c=0;c<4;c++){
+    const d=document.createElement('div');
+    d.className='rcell';d.dataset.r=r;d.dataset.c=c;d.dataset.selected='false';
+    d.onclick=(e)=>{
+      e.stopPropagation();
+      const isSelected=d.dataset.selected==='true';
+      if(isSelected){
+        sym.selRecall=sym.selRecall.filter(x=>!(x.r===r&&x.c===c));
+        d.dataset.selected='false';
+        d.classList.remove('picked');d.textContent='';
+        document.querySelectorAll('#mat-recall .rcell[data-selected="true"]').forEach((el,i)=>el.textContent=i+1);
+      }else{
+        const alreadyExists=sym.selRecall.some(x=>x.r===r&&x.c===c);
+        if(!alreadyExists){
+          sym.selRecall.push({r,c});
+          d.dataset.selected='true';
+          d.classList.add('picked');d.textContent=sym.selRecall.length;
+        }
+      }
+      document.getElementById('sym-rc').textContent=sym.selRecall.length;
+    };
+    g.appendChild(d);
+  }
+}
+function symClear(){
+  sym.selRecall=[];
+  document.getElementById('sym-rc').textContent='0';
+  document.querySelectorAll('#mat-recall .rcell').forEach(c=>{
+    c.classList.remove('picked');c.style.background='';c.textContent='';
+  });
+}
+function symSubmit(){
+  let score=0;
+  sym.shownCells.forEach((cell,i)=>{
+    const s=sym.selRecall[i];
+    if(s&&s.r===cell.r&&s.c===cell.c)score++;
+  });
+  sym.totCorrect+=score;sym.totCells+=sym.shownCells.length;
+  document.getElementById('sym-correct').textContent=sym.totCorrect;
+  const fb=document.getElementById('sym-fb');
+  fb.textContent=`${score} / ${sym.shownCells.length} cells correct`;
+  fb.className='fb-bar '+(score===sym.shownCells.length?'ok':'no');
+  document.getElementById('sym-recall-div').style.display='none';
+  sym.setIdx++;
+  setTimeout(symNextSet,1400);
+}
+function endSym(){
+  document.getElementById('sym-main').style.display='none';
+  document.getElementById('sym-title').textContent='✓ Symmetry Span Complete';
+  document.getElementById('sym-desc').innerHTML='<strong style="color:var(--green)">Done!</strong> Moving to Task 3 in 3 seconds…';
+  setTimeout(()=>{
+    showScreen('s-tmt');
+    document.getElementById('task-label').textContent='Task 3/3';
+    initTMT();
+  },3000);
+}
+
+// ══════════════════════════════════════
+// TASK 3 — TMT-B
+// ══════════════════════════════════════
+const TMT_SEQ=['1','A','2','B','3','C','4','D','5','E',
+               '6','F','7','G','8','H','9','I','10','J',
+               '11','K','12','L','13'];
+const TMT_POS=[
+  [0.88,0.10],[0.08,0.18],[0.55,0.06],[0.72,0.32],[0.18,0.42],
+  [0.90,0.48],[0.38,0.58],[0.65,0.72],[0.12,0.75],[0.50,0.88],
+  [0.82,0.82],[0.28,0.88],[0.70,0.55],[0.42,0.20],[0.92,0.28],
+  [0.05,0.55],[0.60,0.38],[0.25,0.30],[0.78,0.18],[0.48,0.72],
+  [0.15,0.60],[0.85,0.65],[0.32,0.48],[0.68,0.90],[0.10,0.92]
+];
+let tmt={nodes:[],nextIdx:0,errors:0,completed:0,lines:[],finished:false,lockedIndices:[]};
+
+function shuffleUnlockedNodes(){
+  const cv=document.getElementById('tmt-canvas');
+  const W=cv.width,H=cv.height;
+  const MIN_DISTANCE=45; // 21px radius + 21px radius + 3px gap = 45px
+  const MAX_ATTEMPTS=500;
+  
+  // Get unlocked node indices
+  const unlockedIndices=[];
+  for(let i=0;i<tmt.nodes.length;i++){
+    if(!tmt.lockedIndices.includes(i)){
+      unlockedIndices.push(i);
+    }
+  }
+  
+  // Store original positions in case we need to validate
+  const originalPositions=unlockedIndices.map(i=>({...tmt.nodes[i]}));
+  
+  // Generate new valid positions for each unlocked node
+  for(let i=0;i<unlockedIndices.length;i++){
+    const idx=unlockedIndices[i];
+    let placed=false;
+    let attempts=0;
+    
+    while(!placed && attempts<MAX_ATTEMPTS){
+      attempts++;
+      // Generate random position with generous margin
+      const margin=50;
+      const newX=Math.random()*(W-2*margin)+margin;
+      const newY=Math.random()*(H-2*margin)+margin;
+      
+      let collision=false;
+      
+      // Check against all locked nodes
+      for(let j=0;j<tmt.nodes.length;j++){
+        if(tmt.lockedIndices.includes(j)){
+          const dx=newX-tmt.nodes[j].x;
+          const dy=newY-tmt.nodes[j].y;
+          const dist=Math.hypot(dx,dy);
+          if(dist<MIN_DISTANCE){
+            collision=true;
+            break;
+          }
+        }
+      }
+      
+      // Check against already-placed unlocked nodes
+      if(!collision){
+        for(let j=0;j<i;j++){
+          const prevIdx=unlockedIndices[j];
+          const dx=newX-tmt.nodes[prevIdx].x;
+          const dy=newY-tmt.nodes[prevIdx].y;
+          const dist=Math.hypot(dx,dy);
+          if(dist<MIN_DISTANCE){
+            collision=true;
+            break;
+          }
+        }
+      }
+      
+      if(!collision){
+        tmt.nodes[idx].x=newX;
+        tmt.nodes[idx].y=newY;
+        placed=true;
+      }
+    }
+    
+    // If placement failed, force a valid position
+    if(!placed){
+      let angle=0;
+      let radius=MIN_DISTANCE;
+      let foundPos=false;
+      
+      while(!foundPos && angle<Math.PI*2){
+        let testX=tmt.nodes[Math.floor(Math.random()*tmt.nodes.length)].x+Math.cos(angle)*radius;
+        let testY=tmt.nodes[Math.floor(Math.random()*tmt.nodes.length)].y+Math.sin(angle)*radius;
+        
+        testX=Math.max(50,Math.min(testX,W-50));
+        testY=Math.max(50,Math.min(testY,H-50));
+        
+        let collision=false;
+        for(let j=0;j<tmt.nodes.length;j++){
+          if(j!==idx){
+            const dist=Math.hypot(testX-tmt.nodes[j].x,testY-tmt.nodes[j].y);
+            if(dist<MIN_DISTANCE){
+              collision=true;
+              break;
+            }
+          }
+        }
+        
+        if(!collision){
+          tmt.nodes[idx].x=testX;
+          tmt.nodes[idx].y=testY;
+          foundPos=true;
+        }
+        
+        angle+=Math.PI/8;
+        radius+=5;
+      }
+    }
+  }
+}
+
+function initTMT(){
+  const cv=document.getElementById('tmt-canvas');
+  const W=cv.offsetWidth,H=390;
+  cv.width=W;cv.height=H;
+  tmt.nodes=TMT_SEQ.map((label,i)=>({label,x:TMT_POS[i][0]*W,y:TMT_POS[i][1]*H,hit:false}));
+  tmt.lines=[];tmt.nextIdx=0;tmt.errors=0;tmt.completed=0;tmt.finished=false;tmt.lockedIndices=[];
+  
+  // Aggressively separate overlapping initial positions (3px gap = 45px minimum)
+  const MIN_DISTANCE=45;
+  const maxIterations=200;
+  
+  for(let iter=0;iter<maxIterations;iter++){
+    let hasCollision=false;
+    
+    for(let i=0;i<tmt.nodes.length;i++){
+      for(let j=i+1;j<tmt.nodes.length;j++){
+        const dx=tmt.nodes[i].x-tmt.nodes[j].x;
+        const dy=tmt.nodes[i].y-tmt.nodes[j].y;
+        const dist=Math.hypot(dx,dy);
+        
+        if(dist<MIN_DISTANCE){
+          hasCollision=true;
+          // Separate nodes by pushing them apart aggressively
+          if(dist>0.1){
+            const nx=dx/dist;
+            const ny=dy/dist;
+            const sep=(MIN_DISTANCE-dist)*0.6+3;
+            tmt.nodes[i].x+=nx*sep;
+            tmt.nodes[i].y+=ny*sep;
+            tmt.nodes[j].x-=nx*sep;
+            tmt.nodes[j].y-=ny*sep;
+          } else {
+            // If at exact same position, push in opposite directions
+            const angle=Math.random()*Math.PI*2;
+            tmt.nodes[i].x+=Math.cos(angle)*(MIN_DISTANCE/2);
+            tmt.nodes[i].y+=Math.sin(angle)*(MIN_DISTANCE/2);
+            tmt.nodes[j].x-=Math.cos(angle)*(MIN_DISTANCE/2);
+            tmt.nodes[j].y-=Math.sin(angle)*(MIN_DISTANCE/2);
+          }
+        }
+      }
+    }
+    
+    // Keep within bounds with margin
+    const margin=40;
+    tmt.nodes.forEach(n=>{
+      n.x=Math.max(margin,Math.min(n.x,W-margin));
+      n.y=Math.max(margin,Math.min(n.y,H-margin));
+    });
+    
+    if(!hasCollision)break;
+  }
+  
+  document.getElementById('tmt-next').textContent='?';
+  document.getElementById('tmt-err').textContent='Errors: 0';
+  document.getElementById('tmt-done').textContent=`Done: 0 / ${TMT_SEQ.length}`;
+  drawTMT();
+  cv.onclick=null;cv.onclick=tmtClick;
+  cv.ontouchend=e=>{e.preventDefault();tmtClick(e.changedTouches[0]);};
+}
+function drawTMT(){
+  const cv=document.getElementById('tmt-canvas');
+  const ctx=cv.getContext('2d');
+  const W=cv.width,H=cv.height;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#1a1a24';ctx.fillRect(0,0,W,H);
+  tmt.lines.forEach(l=>{
+    ctx.beginPath();ctx.moveTo(l.x1,l.y1);ctx.lineTo(l.x2,l.y2);
+    ctx.strokeStyle='rgba(139,114,255,0.5)';ctx.lineWidth=2.5;ctx.stroke();
+  });
+  tmt.nodes.forEach(n=>{
+    const R=21;
+    ctx.beginPath();ctx.arc(n.x,n.y,R,0,Math.PI*2);
+    ctx.fillStyle=n.hit?'rgba(78,203,141,.2)':'rgba(26,26,36,1)';
+    ctx.strokeStyle=n.hit?'#4ecb8d':'#6060a0';
+    ctx.lineWidth=2;ctx.fill();ctx.stroke();
+    ctx.fillStyle=n.hit?'#4ecb8d':'#ddddf0';
+    ctx.font=`${n.label.length>1?'10':'13'}px DM Mono,monospace`;
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(n.label,n.x,n.y);
+  });
+}
+function tmtClick(e){
+  if(tmt.finished)return;
+  const cv=document.getElementById('tmt-canvas');
+  const rect=cv.getBoundingClientRect();
+  const sx=cv.width/rect.width,sy=cv.height/rect.height;
+  const mx=(e.clientX-rect.left)*sx,my=(e.clientY-rect.top)*sy;
+  for(let i=0;i<tmt.nodes.length;i++){
+    const n=tmt.nodes[i];
+    if(Math.hypot(mx-n.x,my-n.y)<=26){
+      if(i===tmt.nextIdx){
+        if(tmt.nextIdx>0){const p=tmt.nodes[tmt.nextIdx-1];tmt.lines.push({x1:p.x,y1:p.y,x2:n.x,y2:n.y});}
+        n.hit=true;tmt.nextIdx++;tmt.completed++;
+        tmt.lockedIndices.push(i);
+        document.getElementById('tmt-done').textContent=`Done: ${tmt.completed} / ${TMT_SEQ.length}`;
+        if(tmt.nextIdx<TMT_SEQ.length){
+          document.getElementById('tmt-next').textContent=TMT_SEQ[tmt.nextIdx];
+          shuffleUnlockedNodes();
+        }else{
+          tmt.finished=true;
+          document.getElementById('tmt-next').textContent='✓ Done!';
+          setTimeout(showResults,800);
+          drawTMT();return;
+        }
+      }else if(!n.hit){
+        tmt.errors++;
+        document.getElementById('tmt-err').textContent=`Errors: ${tmt.errors}`;
+        const ctx=cv.getContext('2d');
+        ctx.beginPath();ctx.arc(n.x,n.y,26,0,Math.PI*2);
+        ctx.strokeStyle='var(--red)';ctx.lineWidth=3;ctx.stroke();
+        setTimeout(()=>{shuffleUnlockedNodes();drawTMT();},350);return;
+      }
+      drawTMT();return;
+    }
+  }
+}
+function resetTMT(){initTMT();}
+
+// ══════════════════════════════════════
+// RESULTS
+// ══════════════════════════════════════
+function showResults(){
+  clearInterval(gTimer);
+  showScreen('s-results');
+  document.getElementById('task-label').textContent='Complete';
+  document.getElementById('r-osp-sets').textContent=osp.setIdx+' / 7';
+  document.getElementById('r-osp-let').textContent=osp.totCorrect+' / '+osp.totLetters;
+  document.getElementById('r-osp-math').textContent=osp.mathTotal>0?Math.round(osp.mathOk/osp.mathTotal*100)+'%':'—';
+  document.getElementById('r-sym-sets').textContent=sym.setIdx+' / 6';
+  document.getElementById('r-sym-cells').textContent=sym.totCorrect+' / '+sym.totCells;
+  document.getElementById('r-sym-acc').textContent=sym.judgeTotal>0?Math.round(sym.judgeOk/sym.judgeTotal*100)+'%':'—';
+  document.getElementById('r-tmt-nodes').textContent=tmt.completed+' / '+TMT_SEQ.length;
+  document.getElementById('r-tmt-err').textContent=tmt.errors;
+  document.getElementById('r-tmt-fin').textContent=tmt.finished?'Yes ✓':'No (time ran out)';
+}
+</script>
+</body>
+</html>
